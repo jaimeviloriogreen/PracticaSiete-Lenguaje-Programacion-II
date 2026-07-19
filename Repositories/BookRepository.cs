@@ -1,25 +1,31 @@
+using PracticaSiete.Data;
 using PracticaSiete.Models;
 
 namespace PracticaSiete.Repositories;
 
-public class BookRepository {
-  private readonly List<Book> _books = [
-    new(){
-      Id = 1,
-      Uuid = Guid.NewGuid(),
-      Title = "1984",
-      Gender = "Ficción",
-      Author = "George Orwell"
-    },
-    new(){
-      Id = 2,
-      Uuid = Guid.NewGuid(),
-      Title = "El diario de Ana Frank",
-      Gender = "Biográfico",
-      Author = "Ana Frank"
-    }
-  ];
+public class BookRepository(Database db) {
+  private readonly Database _database = db;
   public List<Book> FindAll() {
-    return _books;
+    using var connection = _database.GetConnection();
+    var command = connection.CreateCommand();
+    command.CommandText = "SELECT * FROM book";
+
+    List<Book> books = [];
+
+    using var reader = command.ExecuteReader();
+
+    while (reader.Read()) {
+      books.Add(
+          new Book {
+            Id = reader.GetInt32(0),
+            Uuid = reader.GetGuid(1),
+            Title = reader.GetString(2),
+            Isbn = reader.GetString(3),
+            Gender = reader.GetString(4)
+          }
+      );
+    }
+
+    return books;
   }
 }

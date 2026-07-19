@@ -17,12 +17,15 @@ public class MainScreen(BookService bookService) {
   ];
 
   public void Show() {
+    var figlet = new FigletText("Bookcase @app");
+    AnsiConsole.Write(figlet);
 
     while (running) {
       var prompt = new SelectionPrompt<(string Text, int Value)>()
         .Title("Indica una acción a realizar: ")
         .AddChoices(choices)
         .HighlightStyle("Green")
+        .WrapAround()
         .UseConverter(c => $"{c.Text}");
 
       var option = AnsiConsole.Prompt(prompt);
@@ -36,11 +39,11 @@ public class MainScreen(BookService bookService) {
 
           table.AddColumn("Id");
           table.AddColumn("Título");
+          table.AddColumn("Isbn");
           table.AddColumn("Género");
-          table.AddColumn("Autor");
 
           foreach (Book book in books) {
-            table.AddRow(book.Uuid.ToString()[..8], book.Title, book.Gender, book.Author);
+            table.AddRow(book.Uuid.ToString()[..8], book.Title, book.Isbn, book.Gender);
           }
 
           AnsiConsole.Write(table);

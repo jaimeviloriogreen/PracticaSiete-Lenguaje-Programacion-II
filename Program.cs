@@ -1,10 +1,13 @@
-﻿using PracticaSiete.Repositories;
+﻿using PracticaSiete.Data;
+using PracticaSiete.Repositories;
 using PracticaSiete.Screens;
 using PracticaSiete.Services;
 
 class Program {
   public static void Main(string[] args) {
-    BookRepository bookRepository = new();
+    Database db = new("Database/bookcase.db");
+
+    BookRepository bookRepository = new(db);
 
     BookService bookService = new(bookRepository);
 
