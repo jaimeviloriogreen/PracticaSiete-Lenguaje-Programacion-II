@@ -17,7 +17,12 @@ public class MainScreen(BookService bookService) {
   ];
 
   public void Show() {
-    var figlet = new FigletText("Bookcase @app");
+    AnsiConsole.Clear();
+    var figlet = new FigletText("Bookcase @app") {
+      Color = Color.Green,
+      Justification = Justify.Center
+    };
+
     AnsiConsole.Write(figlet);
 
     while (running) {
@@ -37,26 +42,69 @@ public class MainScreen(BookService bookService) {
           AnsiConsole.Clear();
           var table = new Table();
 
-          table.AddColumn("Id");
+          table.AddColumn("Uuid");
           table.AddColumn("Título");
           table.AddColumn("Isbn");
           table.AddColumn("Género");
 
           foreach (Book book in books) {
-            table.AddRow(book.Uuid.ToString()[..8], book.Title, book.Isbn, book.Gender);
+            table.AddRow(book.Uuid.ToString(), book.Title, book.Isbn, book.Gender);
           }
 
           AnsiConsole.Write(table);
 
           break;
         case 2:
-          Console.WriteLine("Opción 2");
+          AnsiConsole.Clear();
+          Guid uuid = AnsiConsole.Ask<Guid>("Ingresa el uuid del libro: ");
+          bool confirmDelete = AnsiConsole.Confirm("¿Estas seguro?");
+
+          AnsiConsole.Clear();
+
+          if (confirmDelete) {
+            _service.Delete(uuid);
+            AnsiConsole.MarkupLine("[GreenYellow]¡Libro eliminado![/]");
+          }
+          else {
+            AnsiConsole.MarkupLine($"[DarkOrange]¡Operación cancelada![/]");
+          }
           break;
         case 3:
-          Console.WriteLine("Opción 3");
+          AnsiConsole.Clear();
+          string title = AnsiConsole.Ask<string>("Ingrese el título: ");
+          string isbn = AnsiConsole.Ask<string>("Ingrese el ISBN: ");
+          string gender = AnsiConsole.Ask<string>("Ingrese el género: ");
+
+          bool confirmCreate = AnsiConsole.Confirm("¿Estas seguro?");
+
+          AnsiConsole.Clear();
+
+          if (confirmCreate) {
+            _service.Create(Guid.NewGuid(), title, isbn, gender);
+            AnsiConsole.MarkupLine("[GreenYellow]¡Libro agregado exitosamente![/]");
+          }
+          else {
+            AnsiConsole.MarkupLine($"[DarkOrange]¡Operación cancelada![/]");
+          }
           break;
         case 4:
-          Console.WriteLine("Opción 4");
+          AnsiConsole.Clear();
+          Guid uuidToUpdate = AnsiConsole.Ask<Guid>("Ingresa el uuid del libro: ");
+          string newTitle = AnsiConsole.Ask<string>("Ingrese el título: ");
+          string newIsbn = AnsiConsole.Ask<string>("Ingrese el ISBN: ");
+          string newGender = AnsiConsole.Ask<string>("Ingrese el género: ");
+
+          bool confirmUpdate = AnsiConsole.Confirm("¿Estas seguro?");
+
+          AnsiConsole.Clear();
+
+          if (confirmUpdate) {
+            _service.Update(uuidToUpdate, newTitle, newIsbn, newGender);
+            AnsiConsole.MarkupLine("[GreenYellow]¡Libro actualizado exitosamente![/]");
+          }
+          else {
+            AnsiConsole.MarkupLine($"[DarkOrange]¡Operación cancelada![/]");
+          }
           break;
         default:
           running = false;

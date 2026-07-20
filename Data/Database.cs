@@ -7,7 +7,9 @@ public class Database {
   public Database(string dbPath) {
     // TODO: Implementar manejo de excepciones
     _connectionString = $"Data Source={dbPath}";
+
     Initialize();
+    Seed();
   }
 
   public SqliteConnection GetConnection() {
@@ -16,9 +18,13 @@ public class Database {
     return connection;
   }
 
+  /// <summary>
+  /// Create initial tables.
+  /// </summary>
   public void Initialize() {
     using var connection = GetConnection();
-    var command = connection.CreateCommand();
+    using var command = connection.CreateCommand();
+
     command.CommandText = @"
       PRAGMA foreign_keys = ON;
 
@@ -29,22 +35,38 @@ public class Database {
         isbn TEXT NOT NULL,
         gender TEXT NOT NULL
       );
-
-      CREATE TABLE IF NOT EXISTS author(
-        id INTEGER PRIMARY KEY,
-        uuid TEXT NOT NULL UNIQUE,
-        fname TEXT NOT NULL,
-        lname TEXT NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS book_author(
-        book_id INTEGER NOT NULL,
-        author_id INTEGER NOT NULL,
-        FOREIGN KEY (book_id) REFERENCES book(id),
-        FOREIGN KEY (author_id) REFERENCES author(id),
-        PRIMARY KEY(book_id, author_id)
-      );
     ";
     command.ExecuteNonQuery();
+  }
+
+  /// <summary>
+  /// Insert initial data if not exists any rows.
+  /// </summary>
+  public void Seed() {
+    using var connection = GetConnection();
+
+    using var exitsCommand = connection.CreateCommand();
+    exitsCommand.CommandText = @"
+      SELECT EXISTS(
+        SELECT 1 FROM book
+      );";
+
+    // Convert 1 | 0 -> true | false
+    bool exist = Convert.ToBoolean(exitsCommand.ExecuteScalar());
+
+    if (!exist) {
+      using var seedCommand = connection.CreateCommand();
+
+      seedCommand.CommandText = @"
+        INSERT INTO 
+          book(uuid, title, isbn, gender) 
+        VALUES
+          ('bbf988f3-2109-4b49-8636-5547072a142f','1984', 'ABC-001', 'Ficción');
+      ";
+
+      seedCommand.ExecuteNonQuery();
+    }
+
+
   }
 }
