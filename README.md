@@ -4,4 +4,5 @@
 
 ```
 dotnet add package Spectre.Console
+dotnet add package Microsoft.Data.Sqlite
 ```
