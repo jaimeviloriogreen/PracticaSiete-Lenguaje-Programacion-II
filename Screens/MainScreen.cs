@@ -38,36 +38,65 @@ public class MainScreen(BookService bookService) {
       switch (option.Value) {
         case 1:
           var books = _service.FindAll();
-
           AnsiConsole.Clear();
-          var table = new Table();
 
-          table.AddColumn("Uuid");
-          table.AddColumn("Título");
-          table.AddColumn("Isbn");
-          table.AddColumn("Género");
+          if (_service.ExistOne()) {
+            var table = new Table();
 
-          foreach (Book book in books) {
-            table.AddRow(book.Uuid.ToString(), book.Title, book.Isbn, book.Gender);
+            table.AddColumn("Uuid");
+            table.AddColumn("Título");
+            table.AddColumn("Isbn");
+            table.AddColumn("Género");
+
+            foreach (Book book in books) {
+              table.AddRow(book.Uuid.ToString()[..8], book.Title, book.Isbn, book.Gender);
+            }
+            AnsiConsole.Write(table);
+
+            break;
           }
-
-          AnsiConsole.Write(table);
+          AnsiConsole.MarkupLine($"[DarkOrange]¡No existe libros para mostrar![/]");
 
           break;
         case 2:
           AnsiConsole.Clear();
-          Guid uuid = AnsiConsole.Ask<Guid>("Ingresa el uuid del libro: ");
+
+          // Si no hay libros para el proceso.
+          if (!_service.ExistOne()) {
+            AnsiConsole.MarkupLine($"[DarkOrange]¡No hay libros para eliminar![/]");
+            break;
+          }
+
+          var bookChoices = _service.FindAll().Select(b => (b.Uuid, b.Title));
+
+          var bookSelectioPrompt = new SelectionPrompt<(Guid Uuid, string Title)>()
+            .Title("Indica el libro a eliminar: ")
+            .AddChoices(bookChoices)
+            .HighlightStyle(Color.GreenYellow)
+            .EnableSearch()
+            .SearchPlaceholderText("Escribe el libro que quieres eliminar...")
+            .PageSize(5)
+            .WrapAround()
+            .UseConverter(c => $"{c.Title}");
+
+          var bookSelected = AnsiConsole.Prompt(bookSelectioPrompt);
+
           bool confirmDelete = AnsiConsole.Confirm("¿Estas seguro?");
 
           AnsiConsole.Clear();
 
           if (confirmDelete) {
-            _service.Delete(uuid);
+            int rowsDeleted = _service.Delete(bookSelected.Uuid);
+
+            if (rowsDeleted < 1) {
+              AnsiConsole.MarkupLine($"[DarkOrange]El libro no existe![/]");
+              break;
+            }
             AnsiConsole.MarkupLine("[GreenYellow]¡Libro eliminado![/]");
+            break;
           }
-          else {
-            AnsiConsole.MarkupLine($"[DarkOrange]¡Operación cancelada![/]");
-          }
+
+          AnsiConsole.MarkupLine($"[DarkOrange]¡Operación cancelada![/]");
           break;
         case 3:
           AnsiConsole.Clear();
@@ -82,29 +111,53 @@ public class MainScreen(BookService bookService) {
           if (confirmCreate) {
             _service.Create(Guid.NewGuid(), title, isbn, gender);
             AnsiConsole.MarkupLine("[GreenYellow]¡Libro agregado exitosamente![/]");
+            break;
           }
-          else {
-            AnsiConsole.MarkupLine($"[DarkOrange]¡Operación cancelada![/]");
-          }
+
+          AnsiConsole.MarkupLine($"[DarkOrange]¡Operación cancelada![/]");
           break;
         case 4:
           AnsiConsole.Clear();
-          Guid uuidToUpdate = AnsiConsole.Ask<Guid>("Ingresa el uuid del libro: ");
-          string newTitle = AnsiConsole.Ask<string>("Ingrese el título: ");
-          string newIsbn = AnsiConsole.Ask<string>("Ingrese el ISBN: ");
-          string newGender = AnsiConsole.Ask<string>("Ingrese el género: ");
 
+          // Si no hay libros para el proceso.
+          if (!_service.ExistOne()) {
+            AnsiConsole.MarkupLine($"[DarkOrange]¡No hay libros para eliminar![/]");
+            break;
+          }
+
+          var bookChoicesToUpdate = _service.FindAll().Select(b => (b.Uuid, b.Title));
+
+          var bookSelectionPromptToUpdate = new SelectionPrompt<(Guid Uuid, string Title)>()
+            .Title("Indica el libro a actualizar: ")
+            .AddChoices(bookChoicesToUpdate)
+            .HighlightStyle(Color.GreenYellow)
+            .EnableSearch()
+            .SearchPlaceholderText("Escribe el libro que quieres eliminar...")
+            .PageSize(5)
+            .WrapAround()
+            .UseConverter(c => $"{c.Title}");
+
+          var selectionPromptBookToUpdate = AnsiConsole.Prompt(bookSelectionPromptToUpdate);
+
+          // Estoy seguro que el libro existe en este punto por eso puse el operador '!'
+          Book bookToUpdated = _service.FindOne(selectionPromptBookToUpdate.Uuid)!;
+
+          string newTitle = AnsiConsole.Ask<string>("Ingrese el título", bookToUpdated.Title);
+          string newIsbn = AnsiConsole.Ask<string>("Ingrese el ISBN ", bookToUpdated.Isbn);
+          string newGender = AnsiConsole.Ask<string>("Ingrese el género", bookToUpdated.Gender);
+
+          AnsiConsole.WriteLine();
           bool confirmUpdate = AnsiConsole.Confirm("¿Estas seguro?");
 
           AnsiConsole.Clear();
 
           if (confirmUpdate) {
-            _service.Update(uuidToUpdate, newTitle, newIsbn, newGender);
+            _service.Update(selectionPromptBookToUpdate.Uuid, newTitle, newIsbn, newGender);
             AnsiConsole.MarkupLine("[GreenYellow]¡Libro actualizado exitosamente![/]");
+            break;
           }
-          else {
-            AnsiConsole.MarkupLine($"[DarkOrange]¡Operación cancelada![/]");
-          }
+
+          AnsiConsole.MarkupLine($"[DarkOrange]¡Operación cancelada![/]");
           break;
         default:
           running = false;

@@ -10,6 +10,14 @@ public class BookService(BookRepository bookRepository) {
     return _repository.FindAll();
   }
 
+  public bool ExistOne() {
+    return _repository.ExistOne();
+  }
+
+  public Book? FindOne(Guid uuid) {
+    return _repository.FindOne(uuid);
+  }
+
   public int Delete(Guid uuid) {
     return _repository.Delete(uuid);
   }

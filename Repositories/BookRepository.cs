@@ -30,7 +30,42 @@ public class BookRepository(Database db) {
 
     return books;
   }
+  public bool ExistOne() {
+    using var connection = _database.GetConnection();
+    using var command = connection.CreateCommand();
 
+    command.CommandText = @"
+      SELECT EXISTS(SELECT * FROM book);
+    ";
+
+    bool exists = Convert.ToBoolean(command.ExecuteScalar());
+
+    return exists;
+  }
+  public Book? FindOne(Guid uuid) {
+    using var connection = _database.GetConnection();
+    using var command = connection.CreateCommand();
+
+    command.CommandText = @"
+      SELECT uuid, title, gender, isbn FROM book WHERE uuid = @uuid;
+    ";
+
+    command.Parameters.AddWithValue("@uuid", uuid.ToString());
+
+    var reader = command.ExecuteReader();
+
+    if (reader.Read()) {
+      return new Book {
+        Uuid = reader.GetGuid(0),
+        Title = reader.GetString(1),
+        Gender = reader.GetString(2),
+        Isbn = reader.GetString(3)
+      };
+    }
+
+    return null;
+
+  }
   public int Delete(Guid uuid) {
     using var connection = _database.GetConnection();
     using var command = connection.CreateCommand();
