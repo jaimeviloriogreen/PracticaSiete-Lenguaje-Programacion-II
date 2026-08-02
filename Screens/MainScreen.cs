@@ -1,3 +1,4 @@
+using System.Security.Cryptography.X509Certificates;
 using PracticaSiete.Models;
 using PracticaSiete.Services;
 using Spectre.Console;
@@ -104,6 +105,7 @@ public class MainScreen(BookService bookService) {
           string isbn = AnsiConsole.Ask<string>("Ingrese el ISBN: ");
           string gender = AnsiConsole.Ask<string>("Ingrese el género: ");
 
+          AnsiConsole.WriteLine();
           bool confirmCreate = AnsiConsole.Confirm("¿Estas seguro?");
 
           AnsiConsole.Clear();
@@ -157,7 +159,7 @@ public class MainScreen(BookService bookService) {
             break;
           }
 
-          AnsiConsole.MarkupLine($"[DarkOrange]¡Operación cancelada![/]");
+          //   AnsiConsole.MarkupLine($"[DarkOrange]¡Operación cancelada![/]");
           break;
         default:
           running = false;

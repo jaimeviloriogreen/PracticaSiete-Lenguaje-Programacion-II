@@ -1,123 +1,55 @@
+using System.Net.NetworkInformation;
 using PracticaSiete.Data;
 using PracticaSiete.Models;
 
 namespace PracticaSiete.Repositories;
 
-public class BookRepository(Database db) {
-  private readonly Database _database = db;
+public class BookRepository(AppDbConext dbConext) {
+  private readonly AppDbConext _database = dbConext;
   public List<Book> FindAll() {
-    using var connection = _database.GetConnection();
-    using var command = connection.CreateCommand();
-
-    command.CommandText = @"
-      SELECT uuid, title, isbn, gender FROM book;
-    ";
-
-    List<Book> books = [];
-
-    using var reader = command.ExecuteReader();
-
-    while (reader.Read()) {
-      books.Add(
-          new Book {
-            Uuid = reader.GetGuid(0),
-            Title = reader.GetString(1),
-            Isbn = reader.GetString(2),
-            Gender = reader.GetString(3)
-          }
-      );
-    }
-
+    List<Book> books = _database.Books.ToList();
     return books;
   }
+
   public bool ExistOne() {
-    using var connection = _database.GetConnection();
-    using var command = connection.CreateCommand();
-
-    command.CommandText = @"
-      SELECT EXISTS(SELECT * FROM book);
-    ";
-
-    bool exists = Convert.ToBoolean(command.ExecuteScalar());
-
-    return exists;
+    return _database.Books.Any();
   }
-  public Book? FindOne(Guid uuid) {
-    using var connection = _database.GetConnection();
-    using var command = connection.CreateCommand();
 
-    command.CommandText = @"
-      SELECT uuid, title, gender, isbn FROM book WHERE uuid = @uuid;
-    ";
-
-    command.Parameters.AddWithValue("@uuid", uuid.ToString());
-
-    var reader = command.ExecuteReader();
-
-    if (reader.Read()) {
-      return new Book {
-        Uuid = reader.GetGuid(0),
-        Title = reader.GetString(1),
-        Gender = reader.GetString(2),
-        Isbn = reader.GetString(3)
-      };
-    }
-
-    return null;
-
-  }
   public int Delete(Guid uuid) {
-    using var connection = _database.GetConnection();
-    using var command = connection.CreateCommand();
+    var book = FindOne(uuid);
 
-    command.CommandText = "DELETE FROM book WHERE uuid = @uuid";
+    if (book is null) return 0;
 
-    command.Parameters.AddWithValue("@uuid", uuid.ToString());
-    int rowsDeleted = command.ExecuteNonQuery();
+    _database.Remove(book);
+    _database.SaveChanges();
 
-    return rowsDeleted;
+    return 1;
+  }
+
+  public Book? FindOne(Guid uuid) {
+    var book = _database.Books.FirstOrDefault(b => b.Uuid == uuid);
+    return book;
   }
 
   public int Create(Guid uuid, string title, string isbn, string gender) {
-    using var connection = _database.GetConnection();
-    using var command = connection.CreateCommand();
+    Book book = new() { Uuid = uuid, Title = title, Isbn = isbn, Gender = gender };
 
-    command.CommandText = @"
-      INSERT INTO 
-        book(uuid, title, isbn, gender) 
-      VALUES
-        (@uuid, @title, @isbn, @gender);
-    ";
+    _database.Books.Add(book);
 
-    command.Parameters.AddWithValue("@uuid", uuid.ToString());
-    command.Parameters.AddWithValue("@title", title);
-    command.Parameters.AddWithValue("@isbn", isbn);
-    command.Parameters.AddWithValue("@gender", gender);
+    return _database.SaveChanges();
 
-    int rowsInserted = command.ExecuteNonQuery();
-
-    return rowsInserted;
   }
 
   public int Update(Guid uuid, string title, string isbn, string gender) {
-    using var connection = _database.GetConnection();
-    using var command = connection.CreateCommand();
+    var book = FindOne(uuid);
 
-    command.CommandText = @"
-      UPDATE book SET
-        title = @title,
-        isbn = @isbn,
-        gender = @gender
-      WHERE uuid = @uuid;
-    ";
+    if (book is null) return 0;
 
-    command.Parameters.AddWithValue("@title", title);
-    command.Parameters.AddWithValue("@isbn", isbn);
-    command.Parameters.AddWithValue("@gender", gender);
-    command.Parameters.AddWithValue("@uuid", uuid.ToString());
+    book.Title = title;
+    book.Isbn = isbn;
+    book.Gender = gender;
 
-    int rowsUpdated = command.ExecuteNonQuery();
+    return _database.SaveChanges();
 
-    return rowsUpdated;
   }
 }
